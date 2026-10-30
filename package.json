@@ -1,0 +1,26 @@
+{
+  "name": "xiangqi-online",
+  "version": "1.0.0",
+  "private": true,
+  "workspaces": [
+    "packages/*",
+    "apps/*"
+  ],
+  "scripts": {
+    "build:packages": "tsc -p packages/shared-types && tsc -p packages/xiangqi-engine",
+    "build:server": "npm run --workspace=@xiangqi/server build",
+    "build:web": "npm run --workspace=@xiangqi/web build",
+    "build": "npm run build:packages && npm run build:server && npm run build:web",
+    "test:engine": "tsc -p packages/xiangqi-engine/tsconfig.test.json && node packages/xiangqi-engine/dist-test/tests/engine.test.js",
+    "test:server": "tsc -p apps/server/tsconfig.test.json && node apps/server/dist-test/tests/server.integration.test.js",
+    "test:auth": "tsc -p apps/server/tsconfig.test.json && node apps/server/dist-test/tests/auth-match.test.js",
+    "test:matchmaking": "tsc -p apps/server/tsconfig.test.json && node apps/server/dist-test/tests/matchmaking.test.js",
+    "test": "npm run test:engine && npm run test:server && npm run test:auth && npm run test:matchmaking",
+    "dev:server": "npm run --workspace=@xiangqi/server dev",
+    "dev:web": "npm run --workspace=@xiangqi/web dev"
+  },
+  "devDependencies": {
+    "@types/node": "^18.19.0",
+    "typescript": "^5.2.2"
+  }
+}
