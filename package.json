@@ -19,8 +19,11 @@
     "dev:server": "npm run --workspace=@xiangqi/server dev",
     "dev:web": "npm run --workspace=@xiangqi/web dev"
   },
-  "devDependencies": {
-    "@types/node": "^18.19.0",
+  "dependencies": {
+    "prisma": "^5.7.0",
     "typescript": "^5.2.2"
+  },
+  "devDependencies": {
+    "@types/node": "^18.19.0"
   }
 }
