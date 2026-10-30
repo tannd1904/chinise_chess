@@ -19,6 +19,8 @@ interface XiangqiBoardProps {
   checkedColor?: PlayerColor | null;
   onIntersectionClick: (coord: PositionCoordinate) => void;
   disabled?: boolean;
+  className?: string;
+  svgClassName?: string;
 }
 
 export const XiangqiBoard: React.FC<XiangqiBoardProps> = ({
@@ -31,6 +33,8 @@ export const XiangqiBoard: React.FC<XiangqiBoardProps> = ({
   checkedColor = null,
   onIntersectionClick,
   disabled = false,
+  className = '',
+  svgClassName = '',
 }) => {
   // SVG Grid Metrics
   const MARGIN_X = 40;
@@ -149,10 +153,16 @@ export const XiangqiBoard: React.FC<XiangqiBoardProps> = ({
   }, [pieces, animatingPieceId, selectedCoord]);
 
   return (
-    <div className="relative flex justify-center items-center w-full max-w-[620px] mx-auto select-none">
+    <div
+      className={`relative flex justify-center items-center w-full select-none ${
+        className || 'max-w-[620px] mx-auto'
+      }`}
+    >
       <svg
         viewBox={`0 0 ${WIDTH} ${HEIGHT}`}
-        className="w-full h-auto max-h-[82vh] rounded-2xl shadow-2xl border-4 border-[#3e2714] bg-[#ebd5b3] transition-all duration-300"
+        className={`w-full h-auto rounded-2xl shadow-2xl border-4 border-[#3e2714] bg-[#ebd5b3] transition-all duration-300 ${
+          svgClassName || 'max-h-[82vh]'
+        }`}
       >
         <defs>
           {/* Subtle Wood Texture Gradient */}

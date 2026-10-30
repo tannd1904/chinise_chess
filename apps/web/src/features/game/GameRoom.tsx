@@ -27,6 +27,8 @@ import {
   MessageSquare,
   Send,
   History,
+  Maximize2,
+  Minimize2,
 } from 'lucide-react';
 
 export const GameRoom: React.FC = () => {
@@ -66,6 +68,24 @@ export const GameRoom: React.FC = () => {
   const [chatMessages, setChatMessages] = useState<ChatMessage[]>([]);
   const [chatInput, setChatInput] = useState('');
   const [unreadChatCount, setUnreadChatCount] = useState(0);
+
+  // Focus / Large Board Mode
+  const [isFocusMode, setIsFocusMode] = useState<boolean>(false);
+
+  // Keyboard shortcut: 'F' to toggle focus mode, 'Escape' to exit
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (['INPUT', 'TEXTAREA'].includes((e.target as HTMLElement)?.tagName)) return;
+      if (e.key === 'Escape' && isFocusMode) {
+        setIsFocusMode(false);
+      }
+      if (e.key === 'f' || e.key === 'F') {
+        setIsFocusMode((prev) => !prev);
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [isFocusMode]);
   const chatScrollRef = useRef<HTMLDivElement>(null);
   const sidebarTabRef = useRef<'history' | 'chat'>('history');
   sidebarTabRef.current = sidebarTab;
@@ -424,16 +444,46 @@ export const GameRoom: React.FC = () => {
             {copiedLink ? <Check className="w-3.5 h-3.5 text-emerald-400" /> : <Copy className="w-3.5 h-3.5" />}
             {copiedLink ? 'Đã chép link' : 'Chép link mời'}
           </button>
+
+          <button
+            onClick={() => setIsFocusMode((prev) => !prev)}
+            className="flex items-center gap-1.5 bg-sky-950/60 hover:bg-sky-900/60 text-sky-400 text-xs px-3 py-1.5 rounded-lg transition-colors border border-sky-800/60 font-semibold shadow-sm"
+            title="Phóng to bàn cờ & Ẩn các thông tin xung quanh (Phím F)"
+          >
+            {isFocusMode ? (
+              <>
+                <Minimize2 className="w-3.5 h-3.5" />
+                <span>Thu nhỏ (ESC)</span>
+              </>
+            ) : (
+              <>
+                <Maximize2 className="w-3.5 h-3.5" />
+                <span>Phóng to (F)</span>
+              </>
+            )}
+          </button>
         </div>
       </header>
 
       {/* Main Board & Panels Layout */}
-      <main className="flex-1 max-w-6xl w-full mx-auto grid grid-cols-1 lg:grid-cols-12 gap-4 lg:gap-6 items-start justify-center">
-        {/* Left Column: Board Area with Player Headers */}
-        <div className="lg:col-span-8 flex flex-col items-center w-full">
+      <main
+        className={`flex-1 w-full mx-auto transition-all duration-300 ${
+          isFocusMode
+            ? 'max-w-5xl flex flex-col items-center justify-center'
+            : 'max-w-6xl grid grid-cols-1 lg:grid-cols-12 gap-4 lg:gap-6 items-start justify-center'
+        }`}
+      >
+        {/* Board Area with Player Headers */}
+        <div
+          className={`flex flex-col items-center w-full transition-all duration-300 ${
+            isFocusMode ? 'w-full max-w-[850px]' : 'lg:col-span-8'
+          }`}
+        >
           {/* Top Player Card (Opponent) */}
           <div
-            className={`w-full max-w-[600px] flex items-center justify-between p-2.5 rounded-xl border mb-2 transition-all ${
+            className={`w-full flex items-center justify-between p-2.5 rounded-xl border mb-2 transition-all ${
+              isFocusMode ? 'max-w-[850px]' : 'max-w-[600px]'
+            } ${
               gameState?.currentTurn === topColor
                 ? 'bg-stone-900 border-amber-500/50 shadow-lg'
                 : 'bg-stone-900/60 border-stone-800'
@@ -478,7 +528,7 @@ export const GameRoom: React.FC = () => {
           </div>
 
           {/* Fixed-Height Instruction & Status Bar (Prevents any board shifting) */}
-          <div className="w-full max-w-[600px] h-8 min-h-[32px] max-h-[32px] mb-2 flex items-center justify-center text-xs select-none">
+          <div className={`w-full ${isFocusMode ? 'max-w-[850px]' : 'max-w-[600px]'} h-8 min-h-[32px] max-h-[32px] mb-2 flex items-center justify-center text-xs select-none transition-all`}>
             {roomState?.status === 'READY' && (
               myColor === 'BLACK' ? (
                 // Guest perspective (Quân Đen)
@@ -571,11 +621,15 @@ export const GameRoom: React.FC = () => {
             checkedColor={gameState?.checkedColor}
             onIntersectionClick={handleIntersectionClick}
             disabled={roomState?.status !== 'ACTIVE'}
+            className={isFocusMode ? 'w-full max-w-[820px] max-h-[80vh] mx-auto' : 'w-full max-w-[600px] mx-auto'}
+            svgClassName={isFocusMode ? 'max-h-[80vh]' : 'max-h-[82vh]'}
           />
 
           {/* Bottom Player Card (You) */}
           <div
-            className={`w-full max-w-[600px] flex items-center justify-between p-2.5 rounded-xl border mt-2 transition-all ${
+            className={`w-full flex items-center justify-between p-2.5 rounded-xl border mt-2 transition-all ${
+              isFocusMode ? 'max-w-[850px]' : 'max-w-[600px]'
+            } ${
               gameState?.currentTurn === bottomColor
                 ? 'bg-stone-900 border-amber-500/50 shadow-lg'
                 : 'bg-stone-900/60 border-stone-800'
@@ -618,10 +672,64 @@ export const GameRoom: React.FC = () => {
               <span>{formatTime(bottomTime)}</span>
             </div>
           </div>
+
+          {/* Floating Action Controls in Focus Mode */}
+          {isFocusMode && (
+            <div className="w-full max-w-[850px] bg-stone-900/90 border border-stone-800 rounded-xl p-2.5 flex items-center justify-between gap-2 mt-2 shadow-lg">
+              <div className="flex items-center gap-2">
+                <button
+                  onClick={() => setIsFlipped(!isFlipped)}
+                  className="flex items-center gap-1.5 bg-stone-800 hover:bg-stone-700 text-stone-200 text-xs py-1.5 px-3 rounded-lg border border-stone-700 transition-colors"
+                  title="Đảo chiều nhìn bàn cờ"
+                >
+                  <RotateCw className="w-3.5 h-3.5" />
+                  Đảo bàn cờ
+                </button>
+
+                {roomState?.allowUndo && (
+                  <button
+                    onClick={handleRequestUndo}
+                    disabled={roomState?.status !== 'ACTIVE' || !gameState?.history.length}
+                    className="flex items-center gap-1.5 bg-stone-800 hover:bg-stone-700 disabled:opacity-40 text-stone-200 text-xs py-1.5 px-3 rounded-lg border border-stone-700 transition-colors"
+                  >
+                    <Undo2 className="w-3.5 h-3.5 text-stone-400" />
+                    Xin đi lại
+                  </button>
+                )}
+
+                <button
+                  onClick={handleOfferDraw}
+                  disabled={roomState?.status !== 'ACTIVE'}
+                  className="flex items-center gap-1.5 bg-stone-800 hover:bg-stone-700 disabled:opacity-40 text-stone-200 text-xs py-1.5 px-3 rounded-lg border border-stone-700 transition-colors"
+                >
+                  <Users className="w-3.5 h-3.5 text-stone-400" />
+                  Xin hòa
+                </button>
+
+                <button
+                  onClick={() => setConfirmResignOpen(true)}
+                  disabled={roomState?.status !== 'ACTIVE'}
+                  className="flex items-center gap-1.5 bg-red-950/40 hover:bg-red-900/50 disabled:opacity-40 text-red-300 text-xs py-1.5 px-3 rounded-lg border border-red-900/50 transition-colors"
+                >
+                  <Flag className="w-3.5 h-3.5 text-red-400" />
+                  Đầu hàng
+                </button>
+              </div>
+
+              <button
+                onClick={() => setIsFocusMode(false)}
+                className="flex items-center gap-1.5 bg-amber-500/20 hover:bg-amber-500/30 text-amber-300 text-xs py-1.5 px-3 rounded-lg border border-amber-500/30 font-semibold transition-colors"
+              >
+                <Minimize2 className="w-3.5 h-3.5" />
+                <span>Thu nhỏ (ESC)</span>
+              </button>
+            </div>
+          )}
         </div>
 
         {/* Right Column: Controls, Move Log & Action Buttons */}
-        <div className="lg:col-span-4 flex flex-col gap-4 w-full">
+        {!isFocusMode && (
+          <div className="lg:col-span-4 flex flex-col gap-4 w-full">
           {/* Action Toolbar */}
           <div className="bg-stone-900 border border-stone-800 rounded-xl p-3 flex flex-wrap gap-2">
             <button
@@ -825,7 +933,8 @@ export const GameRoom: React.FC = () => {
             </div>
           </div>
         </div>
-      </main>
+      )}
+    </main>
 
       {/* Confirmation Modal: Resign */}
       {confirmResignOpen && (

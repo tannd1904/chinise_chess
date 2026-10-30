@@ -26,6 +26,8 @@ import {
   Clock,
   CheckCircle2,
   X,
+  Maximize2,
+  Minimize2,
 } from 'lucide-react';
 
 interface DifficultyConfig {
@@ -102,6 +104,24 @@ export const PracticePage: React.FC = () => {
 
   // Game Result Modal
   const [showResultModal, setShowResultModal] = useState<boolean>(false);
+
+  // Focus / Zen Large Mode
+  const [isFocusMode, setIsFocusMode] = useState<boolean>(false);
+
+  // Keyboard shortcut: 'F' to toggle focus mode, 'Escape' to exit
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape' && isFocusMode) {
+        setIsFocusMode(false);
+      }
+      if ((e.key === 'f' || e.key === 'F') && !showSetupModal && !showResultModal) {
+        if (['INPUT', 'TEXTAREA'].includes((e.target as HTMLElement)?.tagName)) return;
+        setIsFocusMode((prev) => !prev);
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [isFocusMode, showSetupModal, showResultModal]);
 
   const aiColor: PlayerColor = playerColor === 'RED' ? 'BLACK' : 'RED';
 
@@ -411,6 +431,14 @@ export const PracticePage: React.FC = () => {
           </div>
 
           <div className="flex items-center gap-2">
+            <button
+              onClick={() => setIsFocusMode(true)}
+              className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold bg-sky-500/10 hover:bg-sky-500/20 text-sky-400 rounded-lg transition-colors border border-sky-500/30 shadow-sm"
+              title="Phóng to bàn cờ và ẩn toàn bộ thông tin xung quanh (Phím F)"
+            >
+              <Maximize2 className="w-3.5 h-3.5" />
+              Phóng to (F)
+            </button>
             <button
               onClick={() => setShowSetupModal(true)}
               className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold bg-amber-500 hover:bg-amber-600 text-neutral-950 rounded-lg transition-colors shadow-sm"
@@ -851,6 +879,180 @@ export const PracticePage: React.FC = () => {
               >
                 Xem Lại Bàn Cờ
               </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* FULLSCREEN ZEN FOCUS MODE */}
+      {isFocusMode && (
+        <div className="fixed inset-0 z-50 bg-neutral-950/98 backdrop-blur-md flex flex-col justify-between items-center p-2 sm:p-4 animate-in fade-in duration-200">
+          {/* Top Bar in Focus Mode */}
+          <div className="w-full max-w-[850px] flex items-center justify-between px-4 py-2.5 bg-neutral-900/90 border border-neutral-800 rounded-2xl shadow-xl backdrop-blur-sm">
+            {/* Opponent Info */}
+            <div className="flex items-center gap-3">
+              <div
+                className={`w-3.5 h-3.5 rounded-full ${
+                  aiColor === 'RED' ? 'bg-red-500 shadow-red-500/50' : 'bg-slate-400'
+                } shadow-sm`}
+              />
+              <span className="font-bold text-sm text-neutral-200 flex items-center gap-1.5">
+                <Bot className="w-4 h-4 text-amber-400" />
+                AI ({currentDiffConfig.name})
+              </span>
+              {isAiThinking && (
+                <span className="inline-flex items-center gap-1 text-xs text-amber-400 bg-amber-500/10 px-2.5 py-0.5 rounded-full border border-amber-500/20 animate-pulse">
+                  <Sparkles className="w-3 h-3" />
+                  Đang tính...
+                </span>
+              )}
+            </div>
+
+            {/* Timers & Controls */}
+            <div className="flex items-center gap-3">
+              {timeLimit > 0 && (
+                <div
+                  className={`flex items-center gap-1.5 px-3 py-1 rounded-lg text-xs font-mono font-bold ${
+                    snapshot.currentTurn === aiColor
+                      ? 'bg-amber-500/20 text-amber-300 border border-amber-500/30'
+                      : 'bg-neutral-800 text-neutral-400'
+                  }`}
+                >
+                  <Clock className="w-3.5 h-3.5" />
+                  {formatTime(aiTime)}
+                </div>
+              )}
+
+              <button
+                onClick={() => setIsFlipped((prev) => !prev)}
+                className="p-2 text-neutral-400 hover:text-neutral-200 hover:bg-neutral-800 rounded-xl transition-colors border border-neutral-800"
+                title="Đảo bàn cờ"
+              >
+                <ArrowUpDown className="w-4 h-4" />
+              </button>
+
+              <button
+                onClick={() => setIsFocusMode(false)}
+                className="flex items-center gap-1.5 px-3.5 py-2 text-xs font-bold bg-amber-500 hover:bg-amber-600 text-neutral-950 rounded-xl transition-colors shadow-md"
+                title="Thoát chế độ tập trung (Phím ESC hoặc F)"
+              >
+                <Minimize2 className="w-4 h-4" />
+                Thu nhỏ (ESC)
+              </button>
+            </div>
+          </div>
+
+          {/* Center: Large Chessboard & Side EvalBar */}
+          <div className="relative flex-1 flex items-center justify-center w-full max-w-[850px] my-2">
+            {/* Side EvalBar */}
+            <div className="hidden sm:block absolute -left-8 md:-left-12 top-1/2 -translate-y-1/2">
+              <EvalBar score={evalScore} isFlipped={isFlipped} />
+            </div>
+
+            {/* The Large Xiangqi Board */}
+            <XiangqiBoard
+              pieces={snapshot.pieces}
+              currentTurn={snapshot.currentTurn}
+              playerColor={playerColor}
+              isFlipped={isFlipped}
+              selectedCoord={selectedCoord}
+              legalTargets={legalTargets}
+              lastMove={snapshot.lastMove}
+              isInCheck={snapshot.isInCheck}
+              checkedColor={snapshot.checkedColor}
+              onIntersectionClick={handleIntersectionClick}
+              disabled={isAiThinking || showResultModal}
+              className="w-full max-w-[820px] max-h-[80vh] mx-auto"
+              svgClassName="max-h-[80vh]"
+            />
+
+            {/* Check alert in focus mode */}
+            {snapshot.isInCheck && (
+              <div className="absolute top-2 left-1/2 -translate-x-1/2 bg-red-600/90 text-white text-xs font-bold px-4 py-1.5 rounded-full shadow-lg border border-red-400 backdrop-blur-sm animate-bounce pointer-events-none">
+                CHIẾU TƯỚNG! ({snapshot.checkedColor === 'RED' ? 'Đỏ' : 'Đen'} bị chiếu)
+              </div>
+            )}
+          </div>
+
+          {/* Bottom Bar in Focus Mode */}
+          <div className="w-full max-w-[850px] flex flex-col gap-2">
+            {/* Tactical Hint Card (if active in focus mode) */}
+            {hint && (
+              <div className="w-full bg-amber-500/10 border border-amber-500/30 rounded-xl p-2.5 flex items-center justify-between text-amber-300 text-xs">
+                <div className="flex items-center gap-2">
+                  <Lightbulb className="w-4 h-4 text-amber-400 shrink-0" />
+                  <span>
+                    <strong className="text-amber-200">Gợi ý:</strong> ({hint.move.from.x}, {hint.move.from.y}) → ({hint.move.to.x}, {hint.move.to.y}) • {hint.explanation}
+                  </span>
+                </div>
+                <button onClick={() => setHint(null)} className="text-neutral-400 hover:text-white p-1">
+                  <X className="w-3.5 h-3.5" />
+                </button>
+              </div>
+            )}
+
+            <div className="flex items-center justify-between px-4 py-2.5 bg-neutral-900/90 border border-neutral-800 rounded-2xl shadow-xl backdrop-blur-sm">
+              {/* Player Info */}
+              <div className="flex items-center gap-3">
+                <div
+                  className={`w-3.5 h-3.5 rounded-full ${
+                    playerColor === 'RED' ? 'bg-red-500 shadow-red-500/50' : 'bg-slate-400'
+                  } shadow-sm`}
+                />
+                <span className="font-bold text-sm text-neutral-200">
+                  {user ? user.displayName : 'Bạn'}
+                </span>
+                {snapshot.currentTurn === playerColor && (
+                  <span className="text-xs text-emerald-400 bg-emerald-500/10 px-2.5 py-0.5 rounded-full border border-emerald-500/20 font-medium">
+                    Lượt của bạn
+                  </span>
+                )}
+                {timeLimit > 0 && (
+                  <div
+                    className={`flex items-center gap-1.5 px-3 py-1 rounded-lg text-xs font-mono font-bold ${
+                      snapshot.currentTurn === playerColor
+                        ? 'bg-amber-500/20 text-amber-300 border border-amber-500/30'
+                        : 'bg-neutral-800 text-neutral-400'
+                    }`}
+                  >
+                    <Clock className="w-3.5 h-3.5" />
+                    {formatTime(playerTime)}
+                  </div>
+                )}
+              </div>
+
+              {/* Action Buttons in Focus Mode */}
+              <div className="flex items-center gap-2">
+                <button
+                  onClick={handleUndo}
+                  disabled={boardHistory.length === 0 || isAiThinking}
+                  className="flex items-center gap-1.5 px-3.5 py-1.5 text-xs font-semibold rounded-xl bg-neutral-800 hover:bg-neutral-700 text-neutral-200 disabled:opacity-40 border border-neutral-700 transition-colors shadow-sm"
+                  title="Đi lại nước cờ (Undo)"
+                >
+                  <RotateCcw className="w-3.5 h-3.5 text-sky-400" />
+                  Đi lại
+                </button>
+
+                <button
+                  onClick={handleRequestHint}
+                  disabled={snapshot.currentTurn !== playerColor || isAiThinking || isHintLoading}
+                  className="flex items-center gap-1.5 px-3.5 py-1.5 text-xs font-semibold rounded-xl bg-neutral-800 hover:bg-neutral-700 text-neutral-200 disabled:opacity-40 border border-neutral-700 transition-colors shadow-sm"
+                  title="Gợi ý nước đi"
+                >
+                  <Lightbulb className="w-3.5 h-3.5 text-amber-400" />
+                  {isHintLoading ? 'Tính...' : 'Gợi ý'}
+                </button>
+
+                <button
+                  onClick={handleResign}
+                  disabled={snapshot.status !== 'IN_PROGRESS' && snapshot.status !== 'CHECK'}
+                  className="flex items-center gap-1.5 px-3.5 py-1.5 text-xs font-semibold rounded-xl bg-red-950/40 hover:bg-red-900/50 text-red-300 border border-red-800/40 transition-colors disabled:opacity-40"
+                  title="Xin thua ván đấu"
+                >
+                  <Flag className="w-3.5 h-3.5 text-red-400" />
+                  Đầu hàng
+                </button>
+              </div>
             </div>
           </div>
         </div>
