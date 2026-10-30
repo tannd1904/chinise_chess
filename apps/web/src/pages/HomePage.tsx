@@ -4,6 +4,7 @@ import { TimeControlPreset } from '@xiangqi/shared-types';
 import { socketService } from '../services/socket.service';
 import { useAuth } from '../contexts/AuthContext';
 import { Navbar } from '../components/Navbar';
+import { Footer } from '../components/Footer';
 import {
   Swords,
   Users,
@@ -465,9 +466,7 @@ export const HomePage: React.FC = () => {
       )}
 
       {/* Footer */}
-      <footer className="w-full max-w-6xl mx-auto px-4 py-6 border-t border-stone-800/80 text-center text-xs text-stone-500">
-        <p>Xiangqi Online — Nền tảng chơi cờ tướng hai người thời gian thực. Hệ thống ghép trận tự động Quick Match & ELO.</p>
-      </footer>
+      <Footer />
     </div>
   );
 };

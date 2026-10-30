@@ -17,9 +17,9 @@ export const Navbar: React.FC = () => {
           </div>
           <div>
             <div className="font-bold text-lg text-amber-400 tracking-wide flex items-center gap-1.5">
-              Xiangqi Online
+              Cờ Tướng Online
               <span className="text-[10px] bg-amber-500/20 text-amber-300 px-1.5 py-0.5 rounded font-mono border border-amber-500/30">
-                Phase 2
+                by TanND
               </span>
             </div>
             <div className="text-xs text-neutral-400">Nền tảng cờ tướng trực tuyến</div>

@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { Navbar } from '../components/Navbar';
+import { Footer } from '../components/Footer';
 import { LeaderboardEntry } from '@xiangqi/shared-types';
 import { apiUrl } from '../services/api';
 import { Trophy, Award, Swords } from 'lucide-react';
@@ -140,6 +141,7 @@ export const LeaderboardPage: React.FC = () => {
           </div>
         )}
       </main>
+      <Footer />
     </div>
   );
 };

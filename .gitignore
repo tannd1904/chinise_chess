@@ -4,7 +4,9 @@ node_modules/
 
 # Production builds
 dist/
+**/dist/
 dist-test/
+**/dist-test/
 build/
 
 # Environment variables
@@ -36,3 +38,4 @@ Thumbs.db
 # Temp & Artifacts
 .gemini/
 scratch/
+

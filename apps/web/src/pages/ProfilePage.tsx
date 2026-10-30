@@ -2,6 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import { Navbar } from '../components/Navbar';
+import { Footer } from '../components/Footer';
 import { SavedMatchSummary, UserProfile } from '@xiangqi/shared-types';
 import { apiUrl } from '../services/api';
 import { Swords, Calendar, Play, ShieldAlert, Award, Clock } from 'lucide-react';
@@ -236,6 +237,7 @@ export const ProfilePage: React.FC = () => {
           )}
         </div>
       </main>
+      <Footer />
     </div>
   );
 };
