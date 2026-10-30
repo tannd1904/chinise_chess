@@ -17,6 +17,7 @@ import {
   X,
   CheckCircle2,
   Award,
+  Bot,
 } from 'lucide-react';
 
 export const HomePage: React.FC = () => {
@@ -258,6 +259,40 @@ export const HomePage: React.FC = () => {
                   <span>Tìm Trận Ngay</span>
                 </button>
               </div>
+            </div>
+          </div>
+        </div>
+
+        {/* Featured Card: AI Practice Mode */}
+        <div className="max-w-4xl mx-auto w-full mb-8">
+          <div className="bg-gradient-to-r from-sky-950/40 via-stone-900 to-amber-950/30 border border-sky-500/30 hover:border-sky-500/60 rounded-3xl p-6 sm:p-7 shadow-xl relative overflow-hidden transition-all">
+            <div className="flex flex-col sm:flex-row items-center justify-between gap-6">
+              <div className="flex items-center gap-4">
+                <div className="w-14 h-14 rounded-2xl bg-sky-500/10 border border-sky-500/30 flex items-center justify-center text-sky-400 shrink-0">
+                  <Bot className="w-8 h-8" />
+                </div>
+                <div>
+                  <div className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-sky-500/20 text-sky-300 font-bold text-xs border border-sky-500/30 mb-1.5">
+                    <Sparkles className="w-3 h-3" /> Chế độ Luyện Tập PvE Mới
+                  </div>
+                  <h3 className="text-xl font-bold text-stone-100">
+                    Luyện Cờ Với Máy (AI Engine)
+                  </h3>
+                  <p className="text-xs text-stone-400 mt-1 max-w-lg leading-relaxed">
+                    Rèn luyện chiến thuật mọi lúc với 4 cấp độ thông minh từ Tập Chơi (~1000 ELO) đến Kiện Tướng (~2000+ ELO), hỗ trợ Đi lại (Undo) và Gợi ý nước đi (Hint).
+                  </p>
+                </div>
+              </div>
+
+              <button
+                type="button"
+                onClick={() => navigate('/practice')}
+                className="w-full sm:w-auto px-6 py-3.5 rounded-2xl bg-sky-500 hover:bg-sky-400 text-stone-950 font-bold text-sm flex items-center justify-center gap-2 shadow-lg shadow-sky-500/20 active:scale-[0.98] transition-all cursor-pointer shrink-0"
+              >
+                <Bot className="w-4 h-4" />
+                <span>Luyện cờ ngay</span>
+                <ArrowRight className="w-4 h-4" />
+              </button>
             </div>
           </div>
         </div>

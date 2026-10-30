@@ -1,7 +1,7 @@
 import React from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
-import { Trophy, LogOut, Swords } from 'lucide-react';
+import { Trophy, LogOut, Swords, Bot } from 'lucide-react';
 
 export const Navbar: React.FC = () => {
   const { user, logout } = useAuth();
@@ -34,6 +34,13 @@ export const Navbar: React.FC = () => {
           >
             <Swords className="w-4 h-4" />
             Chơi cờ
+          </Link>
+          <Link
+            to="/practice"
+            className="flex items-center gap-1.5 text-sm text-neutral-300 hover:text-amber-400 transition-colors"
+          >
+            <Bot className="w-4 h-4 text-sky-400" />
+            Luyện tập với máy
           </Link>
           <Link
             to="/leaderboard"

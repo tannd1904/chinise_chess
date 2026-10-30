@@ -18,3 +18,5 @@ export * from './moves/horse';
 export * from './moves/chariot';
 export * from './moves/cannon';
 export * from './moves/soldier';
+export * from './ai';
+

@@ -11,7 +11,7 @@
     "build:server": "npm run --workspace=@xiangqi/server build",
     "build:web": "npm run --workspace=@xiangqi/web build",
     "build": "npm run build:packages && npm run build:server && npm run build:web",
-    "test:engine": "tsc -p packages/xiangqi-engine/tsconfig.test.json && node packages/xiangqi-engine/dist-test/tests/engine.test.js",
+    "test:engine": "tsc -p packages/xiangqi-engine/tsconfig.test.json && node packages/xiangqi-engine/dist-test/tests/engine.test.js && node packages/xiangqi-engine/dist-test/tests/ai.test.js",
     "test:server": "tsc -p apps/server/tsconfig.test.json && node apps/server/dist-test/tests/server.integration.test.js",
     "test:auth": "tsc -p apps/server/tsconfig.test.json && node apps/server/dist-test/tests/auth-match.test.js",
     "test:matchmaking": "tsc -p apps/server/tsconfig.test.json && node apps/server/dist-test/tests/matchmaking.test.js",

@@ -91,3 +91,4 @@ Thuật toán tìm kiếm sâu (Depth 4-5) sẽ được thực thi trong một 
 - **Giai đoạn 2**: Đóng gói Web Worker & xây dựng giao diện `PracticePage.tsx` với đầy đủ nút Undo, Hint, chọn cấp độ.
 - **Giai đoạn 3**: Tích hợp Opening Book cho AI Cấp 4 (Kiện Tướng) & thanh đánh giá thế trận (Eval Bar).
 - **Giai đoạn 4**: Kiểm thử độ nhạy, tính chính xác của các nước đi AI và chạy test suite.
+
