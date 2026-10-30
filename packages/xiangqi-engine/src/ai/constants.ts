@@ -1,4 +1,4 @@
-import { PieceType, PlayerColor, PositionCoordinate } from '@xiangqi/shared-types';
+import { PieceType, PlayerColor } from '@xiangqi/shared-types';
 
 export const PIECE_MATERIAL_VALUES: Record<PieceType, number> = {
   GENERAL: 100000,
@@ -143,3 +143,4 @@ export function getPiecePSTValue(
       return 0;
   }
 }
+

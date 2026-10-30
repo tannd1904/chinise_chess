@@ -56,3 +56,4 @@ self.onmessage = (e: MessageEvent<WorkerRequest>) => {
     self.postMessage(errorResponse);
   }
 };
+

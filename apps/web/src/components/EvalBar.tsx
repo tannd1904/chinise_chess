@@ -46,3 +46,4 @@ export const EvalBar: React.FC<EvalBarProps> = ({ score, isFlipped = false, clas
     </div>
   );
 };
+

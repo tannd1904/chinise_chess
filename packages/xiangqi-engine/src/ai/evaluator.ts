@@ -82,3 +82,4 @@ export class Evaluator {
     return perspective === 'RED' ? netScore : -netScore;
   }
 }
+

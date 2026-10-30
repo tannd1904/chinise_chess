@@ -139,3 +139,4 @@ export function getBookMove(moveHistory: Move[]): BookEntry | null {
 
   return entries[0];
 }
+

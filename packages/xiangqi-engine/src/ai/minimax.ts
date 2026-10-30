@@ -2,7 +2,6 @@ import {
   Move,
   Piece,
   PlayerColor,
-  PositionCoordinate,
 } from '@xiangqi/shared-types';
 import { XiangqiEngine } from '../engine';
 import { applyMoveToPieces, BoardMap } from '../board';
@@ -370,3 +369,4 @@ export class MinimaxAI {
     };
   }
 }
+
