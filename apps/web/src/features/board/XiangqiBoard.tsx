@@ -1,4 +1,4 @@
-import React, { useMemo } from 'react';
+import React, { useMemo, useState, useEffect, useRef } from 'react';
 import {
   Move,
   Piece,
@@ -40,6 +40,65 @@ export const XiangqiBoard: React.FC<XiangqiBoardProps> = ({
   const HEIGHT = MARGIN_Y * 2 + 9 * CELL_SIZE; // 665
   const PIECE_RADIUS = 26;
 
+  // Track the piece currently animating from a move
+  const [animatingPieceId, setAnimatingPieceId] = useState<string | null>(null);
+  const [fadingCapturedPiece, setFadingCapturedPiece] = useState<{
+    piece: Piece;
+    x: number;
+    y: number;
+  } | null>(null);
+
+  // Prevent cross-flying animation when the board is merely flipped
+  const prevFlippedRef = useRef<boolean>(isFlipped);
+  const [skipTransition, setSkipTransition] = useState<boolean>(false);
+
+  useEffect(() => {
+    if (prevFlippedRef.current !== isFlipped) {
+      prevFlippedRef.current = isFlipped;
+      setSkipTransition(true);
+      const timer = setTimeout(() => setSkipTransition(false), 50);
+      return () => clearTimeout(timer);
+    }
+  }, [isFlipped]);
+
+  // Trigger piece lifting & sliding animation on move
+  const lastMoveRef = useRef<string | null>(null);
+
+  useEffect(() => {
+    if (!lastMove) return;
+
+    const moveKey = `${lastMove.from.x},${lastMove.from.y}->${lastMove.to.x},${lastMove.to.y}`;
+    if (lastMoveRef.current !== moveKey) {
+      lastMoveRef.current = moveKey;
+
+      // Find the piece that just landed at lastMove.to
+      const movedPiece = pieces.find(
+        (p) => p.x === lastMove.to.x && p.y === lastMove.to.y
+      );
+
+      if (movedPiece) {
+        setAnimatingPieceId(movedPiece.id);
+
+        // Captured piece handling: dissolve gently over 800ms
+        if (lastMove.capturedPiece) {
+          setFadingCapturedPiece({
+            piece: lastMove.capturedPiece,
+            x: lastMove.to.x,
+            y: lastMove.to.y,
+          });
+        }
+
+        // Lift & gliding duration: 850ms (calm, slow, human-like motion)
+        const timer = setTimeout(() => {
+          setAnimatingPieceId(null);
+          setFadingCapturedPiece(null);
+        }, 850);
+
+        return () => clearTimeout(timer);
+      }
+    }
+  }, [lastMove, pieces]);
+
   // Convert logical coordinates (x: 0..8, y: 0..9) to SVG pixel coordinates
   const toSvgCoords = (x: number, y: number) => {
     const finalX = isFlipped ? 8 - x : x;
@@ -50,7 +109,6 @@ export const XiangqiBoard: React.FC<XiangqiBoardProps> = ({
     };
   };
 
-  // Convert SVG clicks back to logical coordinates (if clicked near intersection)
   const handlePointClick = (x: number, y: number) => {
     if (disabled) return;
     onIntersectionClick({ x, y });
@@ -73,6 +131,22 @@ export const XiangqiBoard: React.FC<XiangqiBoardProps> = ({
     }
     return set;
   }, [legalTargets]);
+
+  // Sort pieces so that the lifted piece (selected or moving) is drawn last in the SVG
+  // so it hovers ABOVE all other pieces without getting occluded
+  const sortedPieces = useMemo(() => {
+    return [...pieces].sort((a, b) => {
+      const aLifted =
+        a.id === animatingPieceId ||
+        (selectedCoord && a.x === selectedCoord.x && a.y === selectedCoord.y);
+      const bLifted =
+        b.id === animatingPieceId ||
+        (selectedCoord && b.x === selectedCoord.x && b.y === selectedCoord.y);
+      if (aLifted && !bLifted) return 1;
+      if (!aLifted && bLifted) return -1;
+      return 0;
+    });
+  }, [pieces, animatingPieceId, selectedCoord]);
 
   return (
     <div className="relative flex justify-center items-center w-full max-w-[620px] mx-auto select-none">
@@ -104,9 +178,14 @@ export const XiangqiBoard: React.FC<XiangqiBoardProps> = ({
             <stop offset="100%" stopColor="#2d3748" />
           </radialGradient>
 
-          {/* Shadow Filter for Pieces */}
-          <filter id="pieceShadow" x="-20%" y="-20%" width="150%" height="150%">
+          {/* Normal Shadow for Pieces on Board */}
+          <filter id="pieceNormalShadow" x="-25%" y="-25%" width="160%" height="160%">
             <feDropShadow dx="2" dy="4" stdDeviation="3" floodColor="#1a0f07" floodOpacity="0.45" />
+          </filter>
+
+          {/* Deeper, Softer Shadow for Lifted Moving/Selected Piece */}
+          <filter id="pieceLiftedShadow" x="-50%" y="-50%" width="200%" height="200%">
+            <feDropShadow dx="4" dy="12" stdDeviation="8" floodColor="#1a0f07" floodOpacity="0.65" />
           </filter>
 
           {/* Highlight Aura for Check */}
@@ -114,6 +193,25 @@ export const XiangqiBoard: React.FC<XiangqiBoardProps> = ({
             <feGaussianBlur stdDeviation="6" result="blur" />
             <feComposite in="SourceGraphic" in2="blur" operator="over" />
           </filter>
+
+          {/* Glowing Aura for Destination Square */}
+          <filter id="lastMoveAura" x="-40%" y="-40%" width="180%" height="180%">
+            <feGaussianBlur stdDeviation="3.5" result="blur" />
+            <feComposite in="SourceGraphic" in2="blur" operator="over" />
+          </filter>
+
+          {/* Directional Trajectory Arrowhead Marker */}
+          <marker
+            id="moveArrowHead"
+            viewBox="0 0 10 10"
+            refX="6"
+            refY="5"
+            markerWidth="7"
+            markerHeight="7"
+            orient="auto"
+          >
+            <path d="M 0 1.5 L 8 5 L 0 8.5 z" fill="#f59e0b" />
+          </marker>
         </defs>
 
         {/* Board Background */}
@@ -151,7 +249,6 @@ export const XiangqiBoard: React.FC<XiangqiBoardProps> = ({
         {/* Vertical Grid Lines (9 files) - Interrupted at River for inner 7 files */}
         {Array.from({ length: 9 }).map((_, file) => {
           if (file === 0 || file === 8) {
-            // Edge files span the entire length
             const pTop = toSvgCoords(file, 0);
             const pBottom = toSvgCoords(file, 9);
             return (
@@ -166,10 +263,8 @@ export const XiangqiBoard: React.FC<XiangqiBoardProps> = ({
               />
             );
           } else {
-            // Top half: rank 0 to 4
             const pTop0 = toSvgCoords(file, 0);
             const pTop4 = toSvgCoords(file, 4);
-            // Bottom half: rank 5 to 9
             const pBot5 = toSvgCoords(file, 5);
             const pBot9 = toSvgCoords(file, 9);
             return (
@@ -263,39 +358,84 @@ export const XiangqiBoard: React.FC<XiangqiBoardProps> = ({
           );
         })()}
 
-        {/* Last Move Indicator (Source and Target squares) */}
-        {lastMove && (
-          <g className="pointer-events-none">
-            {(() => {
-              const fromP = toSvgCoords(lastMove.from.x, lastMove.from.y);
-              const toP = toSvgCoords(lastMove.to.x, lastMove.to.y);
-              return (
+        {/* ========================================================= */}
+        {/* SUPER CLEAR LAST-MOVE VISUALS: Origin, Trajectory Arrow, & Destination */}
+        {/* ========================================================= */}
+        {lastMove && (() => {
+          const pFrom = toSvgCoords(lastMove.from.x, lastMove.from.y);
+          const pTo = toSvgCoords(lastMove.to.x, lastMove.to.y);
+
+          // Calculate directional arrow offsets
+          const dx = pTo.cx - pFrom.cx;
+          const dy = pTo.cy - pFrom.cy;
+          const dist = Math.hypot(dx, dy);
+
+          const startOffset = 14;
+          const endOffset = PIECE_RADIUS + 6;
+
+          const startX = dist > 0 ? pFrom.cx + (dx / dist) * startOffset : pFrom.cx;
+          const startY = dist > 0 ? pFrom.cy + (dy / dist) * startOffset : pFrom.cy;
+          const endX = dist > 0 ? pTo.cx - (dx / dist) * endOffset : pTo.cx;
+          const endY = dist > 0 ? pTo.cy - (dy / dist) * endOffset : pTo.cy;
+
+          return (
+            <g className="pointer-events-none transition-all duration-500">
+              {/* 1. Origin Square Highlight */}
+              <circle
+                cx={pFrom.cx}
+                cy={pFrom.cy}
+                r={PIECE_RADIUS + 3}
+                fill="rgba(245, 158, 11, 0.2)"
+                stroke="#d97706"
+                strokeWidth="2.5"
+                strokeDasharray="6 3"
+                className="animate-pulse"
+              />
+              <circle cx={pFrom.cx} cy={pFrom.cy} r={4.5} fill="#f59e0b" opacity={0.8} />
+
+              {/* 2. Trajectory Directional Arrow */}
+              {dist > 10 && (
                 <>
-                  <circle
-                    cx={fromP.cx}
-                    cy={fromP.cy}
-                    r={PIECE_RADIUS + 3}
-                    fill="none"
-                    stroke="#d97706"
-                    strokeWidth="2.5"
-                    strokeDasharray="4 3"
-                    className="animate-pulse"
+                  {/* Subtle dark backdrop line for high contrast */}
+                  <line
+                    x1={startX}
+                    y1={startY}
+                    x2={endX}
+                    y2={endY}
+                    stroke="rgba(0, 0, 0, 0.35)"
+                    strokeWidth="5"
+                    strokeLinecap="round"
                   />
-                  <circle
-                    cx={toP.cx}
-                    cy={toP.cy}
-                    r={PIECE_RADIUS + 3}
-                    fill="none"
-                    stroke="#b45309"
-                    strokeWidth="3"
+                  {/* Glowing golden arrow line */}
+                  <line
+                    x1={startX}
+                    y1={startY}
+                    x2={endX}
+                    y2={endY}
+                    stroke="#f59e0b"
+                    strokeWidth="3.2"
+                    strokeLinecap="round"
+                    strokeDasharray="7 4"
+                    markerEnd="url(#moveArrowHead)"
                   />
                 </>
-              );
-            })()}
-          </g>
-        )}
+              )}
 
-        {/* King in Check Pulsating Alert Ring */}
+              {/* 3. Destination Square Aura */}
+              <circle
+                cx={pTo.cx}
+                cy={pTo.cy}
+                r={PIECE_RADIUS + 4}
+                fill="none"
+                stroke="#f59e0b"
+                strokeWidth="3"
+                filter="url(#lastMoveAura)"
+              />
+            </g>
+          );
+        })()}
+
+        {/* King in Check Alert Ring */}
         {isInCheck && checkedColor && (() => {
           const checkedGeneral = pieces.find(
             (p) => p.type === 'GENERAL' && p.color === checkedColor
@@ -322,7 +462,7 @@ export const XiangqiBoard: React.FC<XiangqiBoardProps> = ({
             <circle
               cx={pt.cx}
               cy={pt.cy}
-              r={PIECE_RADIUS + 4}
+              r={PIECE_RADIUS + 5}
               fill="rgba(245, 158, 11, 0.25)"
               stroke="#f59e0b"
               strokeWidth="3.5"
@@ -331,11 +471,63 @@ export const XiangqiBoard: React.FC<XiangqiBoardProps> = ({
           );
         })()}
 
-        {/* Render 32 Pieces */}
-        {pieces.map((piece) => {
+        {/* Captured Piece Fade-out / Dissolve Indicator */}
+        {fadingCapturedPiece && (() => {
+          const pt = toSvgCoords(fadingCapturedPiece.x, fadingCapturedPiece.y);
+          const isRed = fadingCapturedPiece.piece.color === 'RED';
+          const char = PIECE_CHARACTERS[fadingCapturedPiece.piece.color][fadingCapturedPiece.piece.type];
+          return (
+            <g
+              className="pointer-events-none transition-all duration-700 ease-out"
+              style={{
+                transform: `translate3d(${pt.cx}px, ${pt.cy}px, 0) scale(0.85)`,
+                opacity: 0,
+              }}
+            >
+              <circle
+                cx={0}
+                cy={0}
+                r={PIECE_RADIUS}
+                fill={isRed ? 'url(#redPieceGrad)' : 'url(#blackPieceGrad)'}
+                stroke={isRed ? '#9b2c2c' : '#1a202c'}
+                strokeWidth="2"
+                opacity={0.6}
+              />
+              <text
+                x={0}
+                y={8}
+                textAnchor="middle"
+                fontSize="24"
+                fontWeight="900"
+                fill={isRed ? '#b91c1c' : '#111827'}
+                opacity={0.6}
+              >
+                {char}
+              </text>
+            </g>
+          );
+        })()}
+
+        {/* ========================================================= */}
+        {/* RENDER 32 PIECES WITH DIGNIFIED, SLOW HUMAN-LIKE SLIDE ANIMATION */}
+        {/* ========================================================= */}
+        {sortedPieces.map((piece) => {
           const { cx, cy } = toSvgCoords(piece.x, piece.y);
           const isRed = piece.color === 'RED';
           const char = PIECE_CHARACTERS[piece.color][piece.type];
+
+          const isSelected =
+            selectedCoord !== null &&
+            selectedCoord.x === piece.x &&
+            selectedCoord.y === piece.y;
+          const isMoving = piece.id === animatingPieceId;
+          const isLifted = isSelected || isMoving;
+
+          // Natural human hand lifting & calm gliding:
+          // 850ms duration with cubic-bezier ease for dignified elder pace
+          const transitionStyle = skipTransition
+            ? 'none'
+            : 'transform 850ms cubic-bezier(0.22, 1, 0.36, 1), filter 300ms ease';
 
           return (
             <g
@@ -344,23 +536,29 @@ export const XiangqiBoard: React.FC<XiangqiBoardProps> = ({
                 e.stopPropagation();
                 handlePointClick(piece.x, piece.y);
               }}
+              style={{
+                transform: `translate3d(${cx}px, ${cy}px, 0) scale(${isLifted ? 1.15 : 1})`,
+                transformOrigin: '0 0',
+                transition: transitionStyle,
+                willChange: 'transform',
+              }}
               className="cursor-pointer select-none"
             >
-              {/* Outer Piece Disk with Shadow */}
+              {/* Outer Piece Disk with Dynamic Normal / Lifted Drop Shadow */}
               <circle
-                cx={cx}
-                cy={cy}
+                cx={0}
+                cy={0}
                 r={PIECE_RADIUS}
                 fill={isRed ? 'url(#redPieceGrad)' : 'url(#blackPieceGrad)'}
                 stroke={isRed ? '#9b2c2c' : '#1a202c'}
-                strokeWidth="2.5"
-                filter="url(#pieceShadow)"
+                strokeWidth={isLifted ? '3' : '2.5'}
+                filter={isLifted ? 'url(#pieceLiftedShadow)' : 'url(#pieceNormalShadow)'}
               />
 
               {/* Inner Engraved Ring */}
               <circle
-                cx={cx}
-                cy={cy}
+                cx={0}
+                cy={0}
                 r={PIECE_RADIUS - 3.5}
                 fill="none"
                 stroke={isRed ? '#c53030' : '#4a5568'}
@@ -369,8 +567,8 @@ export const XiangqiBoard: React.FC<XiangqiBoardProps> = ({
 
               {/* Chinese Calligraphy Character */}
               <text
-                x={cx}
-                y={cy + 8}
+                x={0}
+                y={8}
                 textAnchor="middle"
                 fontSize="24"
                 fontWeight="900"
@@ -398,11 +596,11 @@ export const XiangqiBoard: React.FC<XiangqiBoardProps> = ({
               }}
               className="cursor-pointer"
             >
-              {/* Invisible larger hit target for mobile finger taps */}
+              {/* Invisible larger hit target for finger taps */}
               <circle cx={cx} cy={cy} r={PIECE_RADIUS + 4} fill="transparent" />
 
               {isCapture ? (
-                // Capture indicator: crimson target brackets/ring
+                // Capture indicator: crimson target ring
                 <circle
                   cx={cx}
                   cy={cy}
@@ -434,7 +632,6 @@ export const XiangqiBoard: React.FC<XiangqiBoardProps> = ({
         {Array.from({ length: 10 }).map((_, rank) =>
           Array.from({ length: 9 }).map((_, file) => {
             const key = `${file},${rank}`;
-            // If there's already a piece or legal target, it has its own click handler
             if (pieceMap.has(key) || legalTargetSet.has(key)) return null;
 
             const { cx, cy } = toSvgCoords(file, rank);
